@@ -1,4 +1,4 @@
-package m.a.scheduler.auth.security
+package m.a.scheduler.app.security
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)

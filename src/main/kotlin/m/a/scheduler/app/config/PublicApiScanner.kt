@@ -1,6 +1,6 @@
-package m.a.scheduler.config
+package m.a.scheduler.app.config
 
-import m.a.scheduler.auth.security.PublicApi
+import m.a.scheduler.app.security.PublicApi
 import org.springframework.stereotype.Component
 import org.springframework.web.method.HandlerMethod
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo

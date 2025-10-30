@@ -1,4 +1,4 @@
-package m.a.scheduler.config.handler
+package m.a.scheduler.app.config.handler
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException

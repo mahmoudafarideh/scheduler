@@ -1,4 +1,4 @@
-package m.a.scheduler.config
+package m.a.scheduler.app.config
 
 import jakarta.servlet.DispatcherType
 import org.springframework.context.annotation.Bean
@@ -9,6 +9,8 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.util.matcher.RequestMatcher
+
+private const val apiPrefix = "/api"
 
 @Configuration
 class SecurityConfig(
@@ -23,7 +25,11 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers(RequestMatcher {
-                        it.requestURI in permitPaths
+                        it.requestURI.takeIf { path ->
+                            path.startsWith(apiPrefix)
+                        }?.replaceFirst(apiPrefix, "")?.let { path ->
+                            return@let path in permitPaths
+                        } ?: false
                     })
                     .permitAll()
                     .dispatcherTypeMatchers(
