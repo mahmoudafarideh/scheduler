@@ -6,9 +6,7 @@ import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.util.*
 
-@Document(
-    collection = "PhoneNumberOtp",
-)
+@Document(collection = "phone_number_otp")
 data class PhoneNumberOtpDto(
     @Id val id: ObjectId = ObjectId.get(),
     @Indexed val phoneNumber: String,

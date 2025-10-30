@@ -15,15 +15,27 @@ class PhoneNumberOtpService(
     private val otpCodeGenerator: OtpCodeGenerator
 ) {
     fun sendOtp(phoneNumber: PhoneNumber) {
-        phoneNumberOtpRepository.insert(
-            PhoneNumberOtpDto(
-                phoneNumber = phoneNumber.number,
-                countryCode = phoneNumber.countryCode.countryCode,
-                otp = otpCodeGenerator.generateOtpCode(),
-                createdAt = timeInstant.now(),
-                updatedAt = timeInstant.now(),
-                expiresAt = Date(timeInstant.now().time + 3_000)
-            )
-        )
+        revokeCurrentCode(phoneNumber)
+        val phoneNumberOtpDto = makeNewOtpCode(phoneNumber)
+        phoneNumberOtpRepository.insert(phoneNumberOtpDto)
     }
+
+    private fun revokeCurrentCode(phoneNumber: PhoneNumber) {
+        val previousCodes = phoneNumberOtpRepository.findAllByPhoneNumberAndCountryCode(
+            phoneNumber = phoneNumber.number,
+            countryCode = phoneNumber.countryCode.countryCode
+        )
+        previousCodes.forEach {
+            phoneNumberOtpRepository.save(it.copy(status = PhoneNumberOtpDto.Status.Revoked))
+        }
+    }
+
+    private fun makeNewOtpCode(phoneNumber: PhoneNumber) = PhoneNumberOtpDto(
+        phoneNumber = phoneNumber.number,
+        countryCode = phoneNumber.countryCode.countryCode,
+        otp = otpCodeGenerator.generateOtpCode(),
+        createdAt = timeInstant.now(),
+        updatedAt = timeInstant.now(),
+        expiresAt = Date(timeInstant.now().time + 3_000)
+    )
 }

@@ -5,6 +5,7 @@ import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
 import m.a.scheduler.auth.model.PhoneNumber
+import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.mockito.Mockito
 import org.mockito.Mockito.times
@@ -71,5 +72,30 @@ class PhoneNumberOtpServiceTest {
         assertEquals(6, second.otp.length)
         assertNotEquals(first.otp, second.otp, "Two consecutive OTPs should differ")
     }
+
+    @Test
+    fun `When user retries to login again, previous codes should get revoked`() {
+        val service = createService()
+        val phoneNumber = PhoneNumber("9192493674")
+        val previousCode = generateRandomOtpCode()
+        Mockito.`when`(
+            repository.findAllByPhoneNumberAndCountryCode(phoneNumber.number, "98")
+        ) doReturn listOf(previousCode)
+        val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
+        service.sendOtp(phoneNumber)
+        argumentCaptor<PhoneNumberOtpDto>().apply {
+            verify(repository).save(updatedCode)
+        }
+    }
+
+    private fun generateRandomOtpCode() = PhoneNumberOtpDto(
+        id = ObjectId(),
+        phoneNumber = "9192493674",
+        countryCode = "98",
+        otp = "654321",
+        createdAt = timeInstant.now(),
+        updatedAt = timeInstant.now(),
+        expiresAt = timeInstant.now()
+    )
 
 }
