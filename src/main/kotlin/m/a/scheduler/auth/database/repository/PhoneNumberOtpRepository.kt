@@ -5,9 +5,8 @@ import org.bson.types.ObjectId
 import org.springframework.data.mongodb.repository.MongoRepository
 
 interface PhoneNumberOtpRepository : MongoRepository<PhoneNumberOtpDto, ObjectId> {
-
-    fun findAllByPhoneNumberAndCountryCode(
+    fun findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(
         phoneNumber: String,
         countryCode: String,
-    ): List<PhoneNumberOtpDto>
+    ): PhoneNumberOtpDto?
 }

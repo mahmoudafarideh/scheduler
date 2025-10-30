@@ -21,11 +21,13 @@ class PhoneNumberOtpService(
     }
 
     private fun revokeCurrentCode(phoneNumber: PhoneNumber) {
-        val previousCodes = phoneNumberOtpRepository.findAllByPhoneNumberAndCountryCode(
+        val previousCodes = phoneNumberOtpRepository.findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(
             phoneNumber = phoneNumber.number,
             countryCode = phoneNumber.countryCode.countryCode
-        )
-        previousCodes.forEach {
+        )?.takeIf {
+            it.status == PhoneNumberOtpDto.Status.New
+        }
+        previousCodes?.let {
             phoneNumberOtpRepository.save(it.copy(status = PhoneNumberOtpDto.Status.Revoked))
         }
     }

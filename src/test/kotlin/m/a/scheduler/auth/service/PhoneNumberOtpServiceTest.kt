@@ -79,12 +79,27 @@ class PhoneNumberOtpServiceTest {
         val phoneNumber = PhoneNumber("9192493674")
         val previousCode = generateRandomOtpCode()
         Mockito.`when`(
-            repository.findAllByPhoneNumberAndCountryCode(phoneNumber.number, "98")
-        ) doReturn listOf(previousCode)
+            repository.findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(phoneNumber.number, "98")
+        ) doReturn previousCode
         val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
         service.sendOtp(phoneNumber)
         argumentCaptor<PhoneNumberOtpDto>().apply {
             verify(repository).save(updatedCode)
+        }
+    }
+
+    @Test
+    fun `When user retries to login again and previous code is not pending, previous codes should not get revoked`() {
+        val service = createService()
+        val phoneNumber = PhoneNumber("9192493674")
+        val previousCode = generateRandomOtpCode().copy(status = PhoneNumberOtpDto.Status.Sent)
+        Mockito.`when`(
+            repository.findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(phoneNumber.number, "98")
+        ) doReturn previousCode
+        val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
+        service.sendOtp(phoneNumber)
+        argumentCaptor<PhoneNumberOtpDto>().apply {
+            verify(repository, times(0)).save(updatedCode)
         }
     }
 
