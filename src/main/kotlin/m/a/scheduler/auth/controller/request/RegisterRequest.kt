@@ -2,6 +2,7 @@ package m.a.scheduler.auth.controller.request
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
+import m.a.scheduler.auth.model.PhoneNumber
 
 data class RegisterRequest(
     @field:Pattern(
@@ -10,4 +11,9 @@ data class RegisterRequest(
     )
     @field:NotBlank
     val phoneNumber: String,
+)
+
+internal fun RegisterRequest.toPhoneNumber(): PhoneNumber = PhoneNumber(
+    phoneNumber.replaceFirst("0", ""),
+    PhoneNumber.CountryCode.Iran
 )
