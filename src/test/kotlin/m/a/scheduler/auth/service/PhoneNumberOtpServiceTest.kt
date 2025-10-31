@@ -4,6 +4,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import m.a.scheduler.app.base.TimeInstant
 import m.a.scheduler.app.base.testDispatcherProvider
+import m.a.scheduler.auth.database.model.PhoneNumberDto
 import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
@@ -64,7 +65,7 @@ class PhoneNumberOtpServiceTest {
             verify(repository).insert(capture())
             assertEquals("123456", firstValue.otp)
             assertEquals(6, firstValue.otp.length)
-            assertEquals(3_000, firstValue.expiresAt.time)
+            assertEquals(300_000, firstValue.expiresAt.time)
             verify(otpSendTask).schedule(OtpTaskInfo(phoneNumber, "123456"))
         }
     }
@@ -96,7 +97,7 @@ class PhoneNumberOtpServiceTest {
         val phoneNumber = PhoneNumber("9192493674")
         val previousCode = generateRandomOtpCode()
         Mockito.`when`(
-            repository.findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(phoneNumber.number, "98")
+            repository.findFirstByPhoneOrderByCreatedAtDesc(PhoneNumberDto(phoneNumber.number, "98"))
         ) doReturn previousCode
         val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
         service.sendOtp(phoneNumber)
@@ -110,9 +111,9 @@ class PhoneNumberOtpServiceTest {
         coroutineScope.runTest {
             val service = createService()
             val phoneNumber = PhoneNumber("9192493674")
-            val previousCode = generateRandomOtpCode().copy(status = PhoneNumberOtpDto.Status.Sent)
+            val previousCode = generateRandomOtpCode().copy(status = PhoneNumberOtpDto.Status.Consumed)
             Mockito.`when`(
-                repository.findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(phoneNumber.number, "98")
+                repository.findFirstByPhoneOrderByCreatedAtDesc(PhoneNumberDto(phoneNumber.number, "98"))
             ) doReturn previousCode
             val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
             service.sendOtp(phoneNumber)
@@ -123,8 +124,7 @@ class PhoneNumberOtpServiceTest {
 
     private fun generateRandomOtpCode() = PhoneNumberOtpDto(
         id = ObjectId(),
-        phoneNumber = "9192493674",
-        countryCode = "98",
+        phone = PhoneNumberDto("9192493674", "98"),
         otp = "654321",
         createdAt = timeInstant.now(),
         updatedAt = timeInstant.now(),
