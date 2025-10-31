@@ -15,6 +15,10 @@ jakarta-validation = { module = "jakarta.validation:jakarta.validation-api", ver
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version = "2.20.0" }
 spring-boot-starter-data-mongodb = { module = "org.springframework.boot:spring-boot-starter-data-mongodb", version.ref = "springBoot" }
 spring-boot-starter-data-mongodb-reactive = { module = "org.springframework.boot:spring-boot-starter-data-mongodb-reactive", version.ref = "springBoot" }
+kotlinx-coroutines-core = { module="org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.2" }
+kotlinx-coroutines-test = { module="org.jetbrains.kotlinx:kotlinx-coroutines-test", version = "1.10.2" }
+kotlinx-coroutines-reactor = { module="org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version = "1.10.2" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version = "5.4.0" }
 
 [plugins]
 springframework-boot = { id = "org.springframework.boot", version.ref = "springBoot" }

@@ -2,14 +2,24 @@ package m.a.scheduler.auth.database.model
 
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
-import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.util.*
 
 @Document(collection = "phone_number_otp")
+@CompoundIndexes(
+    value = [
+        CompoundIndex(
+            name = "phone_country_code",
+            def = "{ 'phoneNumber': 1, 'countryCode': 1 }",
+            unique = false
+        )
+    ]
+)
 data class PhoneNumberOtpDto(
     @Id val id: ObjectId = ObjectId.get(),
-    @Indexed val phoneNumber: String,
+    val phoneNumber: String,
     val countryCode: String,
     val otp: String,
     val createdAt: Date,

@@ -1,5 +1,7 @@
 package m.a.scheduler.auth.service
 
+import kotlinx.coroutines.withContext
+import m.a.scheduler.app.base.CoroutineDispatcherProvider
 import m.a.scheduler.app.base.TimeInstant
 import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
@@ -12,23 +14,29 @@ import java.util.*
 class PhoneNumberOtpService(
     private val phoneNumberOtpRepository: PhoneNumberOtpRepository,
     private val timeInstant: TimeInstant,
-    private val otpCodeGenerator: OtpCodeGenerator
+    private val otpCodeGenerator: OtpCodeGenerator,
+    private val coroutineDispatcherProvider: CoroutineDispatcherProvider
 ) {
-    fun sendOtp(phoneNumber: PhoneNumber) {
-        revokeCurrentCode(phoneNumber)
-        val phoneNumberOtpDto = makeNewOtpCode(phoneNumber)
-        phoneNumberOtpRepository.insert(phoneNumberOtpDto)
+    suspend fun sendOtp(phoneNumber: PhoneNumber) {
+        withContext(coroutineDispatcherProvider.io) {
+            revokeCurrentCode(phoneNumber)
+            val phoneNumberOtpDto = makeNewOtpCode(phoneNumber)
+            phoneNumberOtpRepository.insert(phoneNumberOtpDto)
+        }
     }
 
-    private fun revokeCurrentCode(phoneNumber: PhoneNumber) {
-        val previousCodes = phoneNumberOtpRepository.findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(
-            phoneNumber = phoneNumber.number,
-            countryCode = phoneNumber.countryCode.countryCode
-        )?.takeIf {
-            it.status == PhoneNumberOtpDto.Status.New
-        }
-        previousCodes?.let {
-            phoneNumberOtpRepository.save(it.copy(status = PhoneNumberOtpDto.Status.Revoked))
+    private suspend fun revokeCurrentCode(phoneNumber: PhoneNumber) {
+        withContext(coroutineDispatcherProvider.io) {
+            val previousCodes =
+                phoneNumberOtpRepository.findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(
+                    phoneNumber = phoneNumber.number,
+                    countryCode = phoneNumber.countryCode.countryCode
+                )?.takeIf {
+                    it.status == PhoneNumberOtpDto.Status.New
+                }
+            previousCodes?.let {
+                phoneNumberOtpRepository.save(it.copy(status = PhoneNumberOtpDto.Status.Revoked))
+            }
         }
     }
 

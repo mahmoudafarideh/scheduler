@@ -1,6 +1,9 @@
 package m.a.scheduler.auth.service
 
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runTest
 import m.a.scheduler.app.base.TimeInstant
+import m.a.scheduler.app.base.testDispatcherProvider
 import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
@@ -31,7 +34,14 @@ class PhoneNumberOtpServiceTest {
     @MockitoSpyBean
     lateinit var timeInstant: TimeInstant
 
-    private fun createService() = PhoneNumberOtpService(repository, timeInstant, otpCodeGenerator)
+    private val coroutineScope = TestScope()
+
+    private fun createService() = PhoneNumberOtpService(
+        phoneNumberOtpRepository = repository,
+        timeInstant = timeInstant,
+        otpCodeGenerator = otpCodeGenerator,
+        coroutineDispatcherProvider = coroutineScope.testDispatcherProvider
+    )
 
     @BeforeTest
     fun beforeTest() {
@@ -40,7 +50,7 @@ class PhoneNumberOtpServiceTest {
     }
 
     @Test
-    fun `When users tries to login a new 6-len code in 5 minutes should get generated`() {
+    fun `When users tries to login a new 6-len code in 5 minutes should get generated`() = coroutineScope.runTest {
         val service = createService()
         val phoneNumber = PhoneNumber("9192493674")
         service.sendOtp(phoneNumber)
@@ -53,7 +63,7 @@ class PhoneNumberOtpServiceTest {
     }
 
     @Test
-    fun `Otp code should be generated randomly`() {
+    fun `Otp code should be generated randomly`() = coroutineScope.runTest {
         Mockito.`when`(timeInstant.now()) doReturn Date(0)
         val service = createService()
         val phoneNumber = PhoneNumber("9192493674")
@@ -74,7 +84,7 @@ class PhoneNumberOtpServiceTest {
     }
 
     @Test
-    fun `When user retries to login again, previous codes should get revoked`() {
+    fun `When user retries to login again, previous codes should get revoked`() = coroutineScope.runTest {
         val service = createService()
         val phoneNumber = PhoneNumber("9192493674")
         val previousCode = generateRandomOtpCode()
@@ -89,19 +99,20 @@ class PhoneNumberOtpServiceTest {
     }
 
     @Test
-    fun `When user retries to login again and previous code is not pending, previous codes should not get revoked`() {
-        val service = createService()
-        val phoneNumber = PhoneNumber("9192493674")
-        val previousCode = generateRandomOtpCode().copy(status = PhoneNumberOtpDto.Status.Sent)
-        Mockito.`when`(
-            repository.findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(phoneNumber.number, "98")
-        ) doReturn previousCode
-        val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
-        service.sendOtp(phoneNumber)
-        argumentCaptor<PhoneNumberOtpDto>().apply {
-            verify(repository, times(0)).save(updatedCode)
+    fun `When user retries to login again and previous code is not pending, previous codes should not get revoked`() =
+        coroutineScope.runTest {
+            val service = createService()
+            val phoneNumber = PhoneNumber("9192493674")
+            val previousCode = generateRandomOtpCode().copy(status = PhoneNumberOtpDto.Status.Sent)
+            Mockito.`when`(
+                repository.findFirstByPhoneNumberAndCountryCodeOrderByCreatedAtDesc(phoneNumber.number, "98")
+            ) doReturn previousCode
+            val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
+            service.sendOtp(phoneNumber)
+            argumentCaptor<PhoneNumberOtpDto>().apply {
+                verify(repository, times(0)).save(updatedCode)
+            }
         }
-    }
 
     private fun generateRandomOtpCode() = PhoneNumberOtpDto(
         id = ObjectId(),
