@@ -6,5 +6,5 @@ import org.springframework.stereotype.Service
 
 @Service
 class AuthTokenService {
-    suspend fun createToken(user: User) = AuthToken("1234", "2131")
+    suspend fun createToken(user: User): AuthToken = TODO()
 }
