@@ -6,6 +6,8 @@ import m.a.scheduler.auth.controller.request.RegisterRequest
 import m.a.scheduler.auth.controller.request.VerifyOtpRequest
 import m.a.scheduler.auth.controller.request.toPhoneNumber
 import m.a.scheduler.auth.controller.response.OtpResponse
+import m.a.scheduler.auth.controller.response.toInvalidArgumentException
+import m.a.scheduler.auth.model.VerifyOtpResult
 import m.a.scheduler.auth.service.PhoneNumberOtpService
 import m.a.scheduler.user.model.User
 import org.springframework.web.bind.annotation.PostMapping
@@ -33,6 +35,9 @@ class AuthController(
     suspend fun verifyOtp(
         @Valid @RequestBody request: VerifyOtpRequest
     ): User {
-        return otpService.verifyOtpCode(request.toPhoneNumber(), request.otp)
+        return when (val verifyOtpRequest = otpService.verifyOtpCode(request.toPhoneNumber(), request.otp)) {
+            is VerifyOtpResult.Error -> throw verifyOtpRequest.toInvalidArgumentException()
+            is VerifyOtpResult.Success -> TODO()
+        }
     }
 }

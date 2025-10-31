@@ -8,10 +8,9 @@ import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
 import m.a.scheduler.auth.model.PhoneNumber
+import m.a.scheduler.auth.model.VerifyOtpResult
 import m.a.scheduler.auth.task.OtpSendTask
 import m.a.scheduler.auth.task.OtpTaskInfo
-import m.a.scheduler.user.model.User
-import m.a.scheduler.user.service.UserService
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -22,7 +21,6 @@ class PhoneNumberOtpService(
     private val otpCodeGenerator: OtpCodeGenerator,
     private val coroutineDispatcherProvider: CoroutineDispatcherProvider,
     private val otpSendTask: OtpSendTask,
-    private val userService: UserService
 ) {
     suspend fun sendOtp(phoneNumber: PhoneNumber) {
         withContext(coroutineDispatcherProvider.io) {
@@ -36,17 +34,17 @@ class PhoneNumberOtpService(
     suspend fun verifyOtpCode(
         phoneNumber: PhoneNumber,
         otp: String
-    ): User {
+    ): VerifyOtpResult {
         return withContext(coroutineDispatcherProvider.io) {
-            val previousCode = getPreviousPendingCode(phoneNumber) ?: throw Exception("Otp not found")
+            val previousCode = getPreviousPendingCode(phoneNumber) ?: return@withContext VerifyOtpResult.Error.NotFound
             if (previousCode.otp != otp) {
-                throw Exception("Wrong OTP")
+                return@withContext VerifyOtpResult.Error.InvalidOtp
             }
             if (previousCode.expiresAt < timeInstant.now()) {
-                throw Exception("Wrong expiration")
+                return@withContext VerifyOtpResult.Error.ExpiredOtp
             }
             phoneNumberOtpRepository.save(previousCode.copy(status = PhoneNumberOtpDto.Status.Consumed))
-            userService.getOrCreateUser(phoneNumber)
+            return@withContext VerifyOtpResult.Success
         }
     }
 
