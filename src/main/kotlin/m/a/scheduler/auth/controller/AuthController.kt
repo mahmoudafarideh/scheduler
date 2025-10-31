@@ -6,10 +6,12 @@ import m.a.scheduler.auth.controller.request.RegisterRequest
 import m.a.scheduler.auth.controller.request.VerifyOtpRequest
 import m.a.scheduler.auth.controller.request.toPhoneNumber
 import m.a.scheduler.auth.controller.response.OtpResponse
+import m.a.scheduler.auth.controller.response.UserLoginResponse
 import m.a.scheduler.auth.controller.response.toInvalidArgumentException
-import m.a.scheduler.auth.model.VerifyOtpResult
+import m.a.scheduler.auth.controller.response.toLoginResponse
+import m.a.scheduler.auth.model.LoginByOtpResult
+import m.a.scheduler.auth.service.LoginWithOtpService
 import m.a.scheduler.auth.service.PhoneNumberOtpService
-import m.a.scheduler.user.model.User
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -18,7 +20,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/auth")
 class AuthController(
-    private val otpService: PhoneNumberOtpService
+    private val otpService: PhoneNumberOtpService,
+    private val loginWithOtpService: LoginWithOtpService
 ) {
 
     @PublicApi
@@ -34,10 +37,10 @@ class AuthController(
     @PostMapping("/verify-otp")
     suspend fun verifyOtp(
         @Valid @RequestBody request: VerifyOtpRequest
-    ): User {
-        return when (val verifyOtpRequest = otpService.verifyOtpCode(request.toPhoneNumber(), request.otp)) {
-            is VerifyOtpResult.Error -> throw verifyOtpRequest.toInvalidArgumentException()
-            is VerifyOtpResult.Success -> TODO()
+    ): UserLoginResponse {
+        return when (val verifyOtpRequest = loginWithOtpService.loginWithOtp(request.toPhoneNumber(), request.otp)) {
+            is LoginByOtpResult.Failure -> throw verifyOtpRequest.error.toInvalidArgumentException()
+            is LoginByOtpResult.Success -> verifyOtpRequest.user.toLoginResponse(verifyOtpRequest.authToken)
         }
     }
 }

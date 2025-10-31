@@ -1,5 +1,7 @@
 package m.a.scheduler.user.service
 
+import kotlinx.coroutines.withContext
+import m.a.scheduler.app.base.CoroutineDispatcherProvider
 import m.a.scheduler.app.base.TimeInstant
 import m.a.scheduler.auth.database.model.PhoneNumberDto
 import m.a.scheduler.auth.database.model.toPhoneNumberDto
@@ -13,12 +15,16 @@ import org.springframework.stereotype.Service
 @Service
 class UserService(
     private val userRepository: UserRepository,
-    private val timeInstant: TimeInstant
+    private val timeInstant: TimeInstant,
+    private val coroutineDispatcherProvider: CoroutineDispatcherProvider
 ) {
-    fun getOrCreateUser(phoneNumber: PhoneNumber): User {
-        val phoneNumberDto = phoneNumber.toPhoneNumberDto()
-        val user = userRepository.findUserByPhone(phoneNumberDto) ?: userRepository.save(createUserDto(phoneNumberDto))
-        return user.toUser()
+    suspend fun getOrCreateUser(phoneNumber: PhoneNumber): User {
+        return withContext(coroutineDispatcherProvider.io) {
+            val phoneNumberDto = phoneNumber.toPhoneNumberDto()
+            val user = userRepository.findUserByPhone(phoneNumberDto)
+                ?: userRepository.save(createUserDto(phoneNumberDto))
+            user.toUser()
+        }
     }
 
     private fun createUserDto(phoneNumberDto: PhoneNumberDto) = UserDto(

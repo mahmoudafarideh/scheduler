@@ -16,7 +16,7 @@ import java.util.*
         CompoundIndex(
             name = "phone_number",
             def = "{ 'phone': 1 }",
-            unique = false
+            unique = true
         )
     ]
 )
@@ -35,7 +35,7 @@ data class UserDto(
     }
 }
 
-internal fun UserDto.toUser() = User(
+fun UserDto.toUser() = User(
     id = id.toHexString(),
     phone = phone.toPhoneNumber(),
     name = name,
