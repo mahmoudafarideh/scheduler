@@ -30,6 +30,8 @@ dependencies {
     implementation(libs.jackson.module.kotlin)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.security.test)
     testImplementation(libs.kotlinx.coroutines.test)

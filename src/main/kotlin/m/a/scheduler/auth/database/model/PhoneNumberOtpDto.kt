@@ -11,25 +11,23 @@ import java.util.*
 @CompoundIndexes(
     value = [
         CompoundIndex(
-            name = "phone_country_code",
-            def = "{ 'phoneNumber': 1, 'countryCode': 1 }",
+            name = "phone_number",
+            def = "{ 'phone': 1 }",
             unique = false
         )
     ]
 )
 data class PhoneNumberOtpDto(
     @Id val id: ObjectId = ObjectId.get(),
-    val phoneNumber: String,
-    val countryCode: String,
+    val phone: PhoneNumberDto,
     val otp: String,
     val createdAt: Date,
     val updatedAt: Date,
     val expiresAt: Date,
-    val status: Status = Status.New
+    val status: Status = Status.Pending
 ) {
     enum class Status {
-        New,
-        Sent,
+        Pending,
         Revoked,
         Consumed
     }
