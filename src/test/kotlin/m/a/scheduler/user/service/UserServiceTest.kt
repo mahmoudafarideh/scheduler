@@ -6,7 +6,7 @@ import m.a.scheduler.app.base.TimeInstant
 import m.a.scheduler.app.base.testDispatcherProvider
 import m.a.scheduler.auth.database.model.PhoneNumberDto
 import m.a.scheduler.auth.database.model.toPhoneNumberDto
-import m.a.scheduler.auth.model.PhoneNumber
+import m.a.scheduler.auth.service.GetAuthUserId
 import m.a.scheduler.fixtures.phoneNumberFixture
 import m.a.scheduler.user.database.model.UserDto
 import m.a.scheduler.user.database.model.toUser
@@ -28,6 +28,9 @@ class UserServiceTest {
     private lateinit var userRepository: UserRepository
 
     @MockitoBean
+    private lateinit var getAuthUserId: GetAuthUserId
+
+    @MockitoBean
     private lateinit var timeInstant: TimeInstant
 
     private val coroutineScope = TestScope()
@@ -41,7 +44,8 @@ class UserServiceTest {
     private fun createService(): UserService = UserService(
         userRepository = userRepository,
         timeInstant = timeInstant,
-        coroutineDispatcherProvider = coroutineScope.testDispatcherProvider
+        coroutineDispatcherProvider = coroutineScope.testDispatcherProvider,
+        getAuthUserId = getAuthUserId
     )
 
     @Test

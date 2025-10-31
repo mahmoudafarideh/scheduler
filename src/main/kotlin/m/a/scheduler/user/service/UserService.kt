@@ -6,17 +6,21 @@ import m.a.scheduler.app.base.TimeInstant
 import m.a.scheduler.auth.database.model.PhoneNumberDto
 import m.a.scheduler.auth.database.model.toPhoneNumberDto
 import m.a.scheduler.auth.model.PhoneNumber
+import m.a.scheduler.auth.service.GetAuthUserId
 import m.a.scheduler.user.database.model.UserDto
 import m.a.scheduler.user.database.model.toUser
 import m.a.scheduler.user.database.repository.UserRepository
 import m.a.scheduler.user.model.User
+import org.bson.types.ObjectId
 import org.springframework.stereotype.Service
+import kotlin.jvm.optionals.getOrNull
 
 @Service
 class UserService(
     private val userRepository: UserRepository,
     private val timeInstant: TimeInstant,
-    private val coroutineDispatcherProvider: CoroutineDispatcherProvider
+    private val coroutineDispatcherProvider: CoroutineDispatcherProvider,
+    private val getAuthUserId: GetAuthUserId
 ) {
     suspend fun getOrCreateUser(phoneNumber: PhoneNumber): User {
         return withContext(coroutineDispatcherProvider.io) {
@@ -24,6 +28,13 @@ class UserService(
             val user = userRepository.findUserByPhone(phoneNumberDto)
                 ?: userRepository.save(createUserDto(phoneNumberDto))
             user.toUser()
+        }
+    }
+
+    suspend fun getAuthUser(): User? {
+        val userId = getAuthUserId.execute()
+        return withContext(coroutineDispatcherProvider.io) {
+            userRepository.findById(ObjectId(userId)).getOrNull()?.toUser()
         }
     }
 

@@ -22,10 +22,12 @@ data class UserResponse(
 internal fun User.toLoginResponse(authToken: AuthToken): UserLoginResponse {
     return UserLoginResponse(
         token = TokenResponse(authToken.accessToken, authToken.refreshToken),
-        user = UserResponse(
-            name = name,
-            phoneNumber = phone.countryCode.countryCode + phone.number,
-            id = id
-        )
+        user = toUserResponse()
     )
 }
+
+internal fun User.toUserResponse() = UserResponse(
+    name = name,
+    phoneNumber = phone.countryCode.countryCode + phone.number,
+    id = id
+)
