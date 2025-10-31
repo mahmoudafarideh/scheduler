@@ -7,6 +7,8 @@ import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
 import m.a.scheduler.auth.model.PhoneNumber
+import m.a.scheduler.auth.task.OtpSendTask
+import m.a.scheduler.auth.task.OtpTaskInfo
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -15,13 +17,15 @@ class PhoneNumberOtpService(
     private val phoneNumberOtpRepository: PhoneNumberOtpRepository,
     private val timeInstant: TimeInstant,
     private val otpCodeGenerator: OtpCodeGenerator,
-    private val coroutineDispatcherProvider: CoroutineDispatcherProvider
+    private val coroutineDispatcherProvider: CoroutineDispatcherProvider,
+    private val otpSendTask: OtpSendTask
 ) {
     suspend fun sendOtp(phoneNumber: PhoneNumber) {
         withContext(coroutineDispatcherProvider.io) {
             revokeCurrentCode(phoneNumber)
             val phoneNumberOtpDto = makeNewOtpCode(phoneNumber)
             phoneNumberOtpRepository.insert(phoneNumberOtpDto)
+            otpSendTask.schedule(OtpTaskInfo(phoneNumber, phoneNumberOtpDto.otp))
         }
     }
 

@@ -8,6 +8,8 @@ import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
 import m.a.scheduler.auth.model.PhoneNumber
+import m.a.scheduler.auth.task.OtpSendTask
+import m.a.scheduler.auth.task.OtpTaskInfo
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.mockito.Mockito
@@ -32,6 +34,9 @@ class PhoneNumberOtpServiceTest {
     lateinit var otpCodeGenerator: OtpCodeGenerator
 
     @MockitoSpyBean
+    lateinit var otpSendTask: OtpSendTask
+
+    @MockitoSpyBean
     lateinit var timeInstant: TimeInstant
 
     private val coroutineScope = TestScope()
@@ -40,7 +45,8 @@ class PhoneNumberOtpServiceTest {
         phoneNumberOtpRepository = repository,
         timeInstant = timeInstant,
         otpCodeGenerator = otpCodeGenerator,
-        coroutineDispatcherProvider = coroutineScope.testDispatcherProvider
+        coroutineDispatcherProvider = coroutineScope.testDispatcherProvider,
+        otpSendTask = otpSendTask
     )
 
     @BeforeTest
@@ -59,6 +65,7 @@ class PhoneNumberOtpServiceTest {
             assertEquals("123456", firstValue.otp)
             assertEquals(6, firstValue.otp.length)
             assertEquals(3_000, firstValue.expiresAt.time)
+            verify(otpSendTask).schedule(OtpTaskInfo(phoneNumber, "123456"))
         }
     }
 
