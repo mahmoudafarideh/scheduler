@@ -21,10 +21,12 @@ data class UserResponse(
 
 internal fun User.toLoginResponse(authToken: AuthToken): UserLoginResponse {
     return UserLoginResponse(
-        token = TokenResponse(authToken.accessToken, authToken.refreshToken),
+        token = authToken.toTokenResponse(),
         user = toUserResponse()
     )
 }
+
+internal fun AuthToken.toTokenResponse() = TokenResponse(accessToken, refreshToken)
 
 internal fun User.toUserResponse() = UserResponse(
     name = name,
