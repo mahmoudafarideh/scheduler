@@ -12,6 +12,7 @@ import m.a.scheduler.user.database.model.toUser
 import m.a.scheduler.user.database.repository.UserRepository
 import m.a.scheduler.user.model.User
 import org.bson.types.ObjectId
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import kotlin.jvm.optionals.getOrNull
 
@@ -29,6 +30,10 @@ class UserService(
                 ?: userRepository.save(createUserDto(phoneNumberDto))
             user.toUser()
         }
+    }
+
+    suspend fun getUserById(id: String): User? {
+        return userRepository.findByIdOrNull(ObjectId(id))?.toUser()
     }
 
     suspend fun getAuthUser(): User? {

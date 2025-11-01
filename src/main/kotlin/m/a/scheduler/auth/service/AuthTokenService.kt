@@ -10,10 +10,12 @@ import m.a.scheduler.auth.database.model.RefreshTokenDto
 import m.a.scheduler.auth.database.repository.RefreshTokenRepository
 import m.a.scheduler.auth.model.AuthToken
 import m.a.scheduler.user.model.User
+import m.a.scheduler.user.service.UserService
 import org.bson.types.ObjectId
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatusCode
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
 import java.security.MessageDigest
 import java.util.*
@@ -26,7 +28,8 @@ class AuthTokenService(
     @Value("\${jwt.secret}") private val jwtSecret: String,
     private val refreshTokenRepository: RefreshTokenRepository,
     private val coroutineDispatcherProvider: CoroutineDispatcherProvider,
-    private val timeInstant: TimeInstant
+    private val timeInstant: TimeInstant,
+    private val userService: UserService,
 ) {
 
     private val secretKey by lazy {
@@ -69,6 +72,33 @@ class AuthTokenService(
         return claims.subject
     }
 
+    @Transactional
+    suspend fun refreshToken(refreshToken: String): AuthToken {
+        return withContext(coroutineDispatcherProvider.io) {
+            if (!validateRefreshToken(refreshToken)) {
+                throw ResponseStatusException(
+                    HttpStatusCode.valueOf(401), "Invalid refresh token."
+                )
+            }
+
+            val userId = getUserIdFromToken(refreshToken)
+            val user = userService.getUserById(userId) ?: throw ResponseStatusException(
+                HttpStatusCode.valueOf(401), "Invalid refresh token."
+            )
+
+            val hashed = hashToken(refreshToken)
+
+            refreshTokenRepository.findByUserIdAndHashedToken(ObjectId(user.id), hashed)
+                ?: throw ResponseStatusException(
+                    HttpStatusCode.valueOf(401),
+                    "Refresh token not recognized (maybe used or expired?)"
+                )
+
+            refreshTokenRepository.deleteByUserIdAndHashedToken(ObjectId(user.id), hashed)
+            createToken(user)
+        }
+    }
+
     private fun generateToken(userId: String, type: String, expiry: Long): String {
         val now = Date()
         val expiryDate = Date(now.time + expiry)
@@ -82,18 +112,17 @@ class AuthTokenService(
     }
 
     private fun parseAllClaims(token: String): Claims? {
-        val rawToken = if (token.startsWith("Bearer ")) {
-            token.removePrefix("Bearer ")
-        } else token
-        return try {
+        val rawToken = when {
+            token.startsWith("Bearer ") -> token.removePrefix("Bearer ")
+            else -> token
+        }
+        return kotlin.runCatching {
             Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(rawToken)
                 .payload
-        } catch (e: Exception) {
-            null
-        }
+        }.getOrNull()
     }
 
     private fun hashToken(token: String): String {
