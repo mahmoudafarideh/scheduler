@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm") version libs.versions.kotlin.get()
     kotlin("plugin.spring") version libs.versions.kotlin.get()
-    alias(libs.plugins.springframework.boot) apply(false)
+    alias(libs.plugins.springframework.boot)
     alias(libs.plugins.spring.dependecy.management)
 }
 
