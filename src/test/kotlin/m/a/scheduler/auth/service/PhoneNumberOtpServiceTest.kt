@@ -4,7 +4,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import m.a.scheduler.app.base.TimeInstant
 import m.a.scheduler.app.base.testDispatcherProvider
-import m.a.scheduler.auth.database.model.PhoneNumberDto
+import m.a.scheduler.auth.database.model.EncryptedPhoneNumberDto
 import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
@@ -12,6 +12,7 @@ import m.a.scheduler.auth.database.utils.PhoneNumberCrypto
 import m.a.scheduler.auth.model.VerifyOtpResult
 import m.a.scheduler.auth.task.OtpSendTask
 import m.a.scheduler.auth.task.OtpTaskInfo
+import m.a.scheduler.fixtures.encryptedPhoneNumberDtoFixture
 import m.a.scheduler.fixtures.phoneNumberFixture
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,8 +31,6 @@ import kotlin.test.assertNotEquals
 
 @SpringBootTest
 class PhoneNumberOtpServiceTest {
-
-    private val encryptedPhoneNumber = "EncryptedPhoneNumber"
 
     @MockitoBean
     lateinit var repository: PhoneNumberOtpRepository
@@ -63,9 +62,7 @@ class PhoneNumberOtpServiceTest {
     fun beforeTest() {
         Mockito.`when`(timeInstant.now()) doReturn Date(0)
         Mockito.`when`(otpCodeGenerator.generateOtpCode()) doReturn "123456"
-        Mockito.`when`(phoneNumberCrypto.encrypt(any())) doReturn PhoneNumberDto(
-            encryptedPhoneNumber, "Iran"
-        )
+        Mockito.`when`(phoneNumberCrypto.encrypt(any())) doReturn encryptedPhoneNumberDtoFixture
     }
 
     @Test
@@ -77,7 +74,7 @@ class PhoneNumberOtpServiceTest {
             assertEquals("123456", firstValue.otp)
             assertEquals(6, firstValue.otp.length)
             assertEquals(300_000, firstValue.expiresAt.time)
-            assertEquals(encryptedPhoneNumber, firstValue.phone.phoneNumber)
+            assertEquals(encryptedPhoneNumberDtoFixture.phoneNumber, firstValue.phone.phoneNumber)
             assertEquals("Iran", firstValue.phone.countryCode)
             verify(otpSendTask).schedule(OtpTaskInfo(phoneNumberFixture, "123456"))
         }
@@ -169,15 +166,13 @@ class PhoneNumberOtpServiceTest {
         previousCode: PhoneNumberOtpDto? = null
     ) {
         Mockito.`when`(
-            repository.findFirstByPhoneOrderByCreatedAtDesc(
-                PhoneNumberDto(encryptedPhoneNumber, "Iran")
-            )
+            repository.findFirstByPhoneOrderByCreatedAtDesc(encryptedPhoneNumberDtoFixture)
         ) doReturn previousCode
     }
 
     private fun generateRandomOtpCode() = PhoneNumberOtpDto(
         id = ObjectId(),
-        phone = PhoneNumberDto(phoneNumberFixture.number, phoneNumberFixture.countryCode.countryCode),
+        phone = EncryptedPhoneNumberDto(phoneNumberFixture.number, phoneNumberFixture.countryCode.countryCode),
         otp = "654321",
         createdAt = timeInstant.now(),
         updatedAt = timeInstant.now(),

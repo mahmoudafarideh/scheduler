@@ -1,16 +1,16 @@
 package m.a.scheduler.auth.database.utils
 
-import m.a.scheduler.auth.database.model.PhoneNumberDto
+import m.a.scheduler.auth.database.model.EncryptedPhoneNumberDto
 import m.a.scheduler.auth.model.PhoneNumber
 import org.springframework.stereotype.Component
 
 @Component
 class PhoneNumberCrypto {
-    fun encrypt(phoneNumber: PhoneNumber): PhoneNumberDto {
+    fun encrypt(phoneNumber: PhoneNumber): EncryptedPhoneNumberDto {
         TODO()
     }
 
-    fun decrypt(phoneNumber: PhoneNumberDto): PhoneNumber {
+    fun decrypt(phoneNumber: EncryptedPhoneNumberDto): PhoneNumber {
         TODO()
     }
 }

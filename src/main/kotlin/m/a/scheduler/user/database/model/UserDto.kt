@@ -1,7 +1,7 @@
 package m.a.scheduler.user.database.model
 
-import m.a.scheduler.auth.database.model.PhoneNumberDto
-import m.a.scheduler.auth.database.model.toPhoneNumber
+import m.a.scheduler.auth.database.model.EncryptedPhoneNumberDto
+import m.a.scheduler.auth.database.utils.PhoneNumberCrypto
 import m.a.scheduler.user.model.User
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
@@ -22,7 +22,7 @@ import java.util.*
 )
 data class UserDto(
     @Id val id: ObjectId = ObjectId.get(),
-    val phone: PhoneNumberDto,
+    val phone: EncryptedPhoneNumberDto,
     val name: String,
     val state: State = State.Active,
     val createdAt: Date,
@@ -35,9 +35,9 @@ data class UserDto(
     }
 }
 
-fun UserDto.toUser() = User(
+fun UserDto.toUser(phoneNumberCrypto: PhoneNumberCrypto) = User(
     id = id.toHexString(),
-    phone = phone.toPhoneNumber(),
+    phone = phoneNumberCrypto.decrypt(phone),
     name = name,
     state = when (state) {
         UserDto.State.Active -> User.State.Active
