@@ -3,7 +3,6 @@ package m.a.scheduler.auth.service
 import kotlinx.coroutines.withContext
 import m.a.scheduler.app.base.CoroutineDispatcherProvider
 import m.a.scheduler.app.base.TimeInstant
-import m.a.scheduler.auth.database.model.PhoneNumberDto
 import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
@@ -61,7 +60,7 @@ class PhoneNumberOtpService(
 
     private fun getPreviousPendingCode(phoneNumber: PhoneNumber): PhoneNumberOtpDto? {
         return phoneNumberOtpRepository.findFirstByPhoneOrderByCreatedAtDesc(
-            phone = PhoneNumberDto(phoneNumber.number, phoneNumber.countryCode.countryCode)
+            phone = phoneNumberCrypto.encrypt(phoneNumber)
         )?.takeIf {
             it.status == PhoneNumberOtpDto.Status.Pending
         }

@@ -9,7 +9,6 @@ import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
 import m.a.scheduler.auth.database.utils.PhoneNumberCrypto
-import m.a.scheduler.auth.model.PhoneNumber
 import m.a.scheduler.auth.model.VerifyOtpResult
 import m.a.scheduler.auth.task.OtpSendTask
 import m.a.scheduler.auth.task.OtpTaskInfo
@@ -31,6 +30,8 @@ import kotlin.test.assertNotEquals
 
 @SpringBootTest
 class PhoneNumberOtpServiceTest {
+
+    private val encryptedPhoneNumber = "EncryptedPhoneNumber"
 
     @MockitoBean
     lateinit var repository: PhoneNumberOtpRepository
@@ -63,7 +64,7 @@ class PhoneNumberOtpServiceTest {
         Mockito.`when`(timeInstant.now()) doReturn Date(0)
         Mockito.`when`(otpCodeGenerator.generateOtpCode()) doReturn "123456"
         Mockito.`when`(phoneNumberCrypto.encrypt(any())) doReturn PhoneNumberDto(
-            "EncryptedPhoneNumber", "Iran"
+            encryptedPhoneNumber, "Iran"
         )
     }
 
@@ -76,7 +77,7 @@ class PhoneNumberOtpServiceTest {
             assertEquals("123456", firstValue.otp)
             assertEquals(6, firstValue.otp.length)
             assertEquals(300_000, firstValue.expiresAt.time)
-            assertEquals("EncryptedPhoneNumber", firstValue.phone.phoneNumber)
+            assertEquals(encryptedPhoneNumber, firstValue.phone.phoneNumber)
             assertEquals("Iran", firstValue.phone.countryCode)
             verify(otpSendTask).schedule(OtpTaskInfo(phoneNumberFixture, "123456"))
         }
@@ -106,7 +107,7 @@ class PhoneNumberOtpServiceTest {
     fun `When user retries to login again, previous codes should get revoked`() = coroutineScope.runTest {
         val service = createService()
         val previousCode = generateRandomOtpCode()
-        mockPreviousOtpCode(phoneNumberFixture, previousCode)
+        mockPreviousOtpCode(previousCode)
         val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
         service.sendOtp(phoneNumberFixture)
         argumentCaptor<PhoneNumberOtpDto>().apply {
@@ -118,7 +119,7 @@ class PhoneNumberOtpServiceTest {
     fun `When user entered otp correctly, it should be able to login and code get consumed`() = coroutineScope.runTest {
         val service = createService()
         val previousCode = generateRandomOtpCode()
-        mockPreviousOtpCode(phoneNumberFixture, previousCode)
+        mockPreviousOtpCode(previousCode)
         val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Consumed)
         val result = service.verifyOtpCode(phoneNumberFixture, previousCode.otp)
         argumentCaptor<PhoneNumberOtpDto>().apply {
@@ -134,15 +135,15 @@ class PhoneNumberOtpServiceTest {
             val previousCode = generateRandomOtpCode()
             val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Consumed)
 
-            mockPreviousOtpCode(phoneNumberFixture, previousCode)
+            mockPreviousOtpCode(previousCode)
             val result = service.verifyOtpCode(phoneNumberFixture, "000000")
             assertEquals(VerifyOtpResult.Error.InvalidOtp, result)
 
-            mockPreviousOtpCode(phoneNumberFixture, previousCode.copy(expiresAt = Date(-10)))
+            mockPreviousOtpCode(previousCode.copy(expiresAt = Date(-10)))
             val result2 = service.verifyOtpCode(phoneNumberFixture, previousCode.otp)
             assertEquals(VerifyOtpResult.Error.ExpiredOtp, result2)
 
-            mockPreviousOtpCode(phoneNumberFixture, null)
+            mockPreviousOtpCode(null)
             val result3 = service.verifyOtpCode(phoneNumberFixture, "000000")
             assertEquals(VerifyOtpResult.Error.NotFound, result3)
 
@@ -156,7 +157,7 @@ class PhoneNumberOtpServiceTest {
         coroutineScope.runTest {
             val service = createService()
             val previousCode = generateRandomOtpCode().copy(status = PhoneNumberOtpDto.Status.Consumed)
-            mockPreviousOtpCode(phoneNumberFixture, previousCode)
+            mockPreviousOtpCode(previousCode)
             val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
             service.sendOtp(phoneNumberFixture)
             argumentCaptor<PhoneNumberOtpDto>().apply {
@@ -165,11 +166,12 @@ class PhoneNumberOtpServiceTest {
         }
 
     private fun mockPreviousOtpCode(
-        phoneNumber: PhoneNumber,
         previousCode: PhoneNumberOtpDto? = null
     ) {
         Mockito.`when`(
-            repository.findFirstByPhoneOrderByCreatedAtDesc(PhoneNumberDto(phoneNumber.number, "98"))
+            repository.findFirstByPhoneOrderByCreatedAtDesc(
+                PhoneNumberDto(encryptedPhoneNumber, "Iran")
+            )
         ) doReturn previousCode
     }
 
