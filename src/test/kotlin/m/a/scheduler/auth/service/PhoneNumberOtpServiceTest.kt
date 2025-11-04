@@ -8,6 +8,7 @@ import m.a.scheduler.auth.database.model.PhoneNumberDto
 import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
+import m.a.scheduler.auth.database.utils.PhoneNumberCrypto
 import m.a.scheduler.auth.model.PhoneNumber
 import m.a.scheduler.auth.model.VerifyOtpResult
 import m.a.scheduler.auth.task.OtpSendTask
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.mockito.Mockito
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.springframework.boot.test.context.SpringBootTest
@@ -37,6 +39,9 @@ class PhoneNumberOtpServiceTest {
     lateinit var otpCodeGenerator: OtpCodeGenerator
 
     @MockitoBean
+    lateinit var phoneNumberCrypto: PhoneNumberCrypto
+
+    @MockitoBean
     lateinit var otpSendTask: OtpSendTask
 
     @MockitoBean
@@ -49,13 +54,17 @@ class PhoneNumberOtpServiceTest {
         timeInstant = timeInstant,
         otpCodeGenerator = otpCodeGenerator,
         coroutineDispatcherProvider = coroutineScope.testDispatcherProvider,
-        otpSendTask = otpSendTask
+        otpSendTask = otpSendTask,
+        phoneNumberCrypto = phoneNumberCrypto
     )
 
     @BeforeTest
     fun beforeTest() {
         Mockito.`when`(timeInstant.now()) doReturn Date(0)
         Mockito.`when`(otpCodeGenerator.generateOtpCode()) doReturn "123456"
+        Mockito.`when`(phoneNumberCrypto.encrypt(any())) doReturn PhoneNumberDto(
+            "EncryptedPhoneNumber", "Iran"
+        )
     }
 
     @Test
@@ -67,6 +76,8 @@ class PhoneNumberOtpServiceTest {
             assertEquals("123456", firstValue.otp)
             assertEquals(6, firstValue.otp.length)
             assertEquals(300_000, firstValue.expiresAt.time)
+            assertEquals("EncryptedPhoneNumber", firstValue.phone.phoneNumber)
+            assertEquals("Iran", firstValue.phone.countryCode)
             verify(otpSendTask).schedule(OtpTaskInfo(phoneNumberFixture, "123456"))
         }
     }

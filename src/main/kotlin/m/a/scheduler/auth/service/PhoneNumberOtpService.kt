@@ -7,6 +7,7 @@ import m.a.scheduler.auth.database.model.PhoneNumberDto
 import m.a.scheduler.auth.database.model.PhoneNumberOtpDto
 import m.a.scheduler.auth.database.repository.PhoneNumberOtpRepository
 import m.a.scheduler.auth.database.utils.OtpCodeGenerator
+import m.a.scheduler.auth.database.utils.PhoneNumberCrypto
 import m.a.scheduler.auth.model.PhoneNumber
 import m.a.scheduler.auth.model.VerifyOtpResult
 import m.a.scheduler.auth.task.OtpSendTask
@@ -21,6 +22,7 @@ class PhoneNumberOtpService(
     private val otpCodeGenerator: OtpCodeGenerator,
     private val coroutineDispatcherProvider: CoroutineDispatcherProvider,
     private val otpSendTask: OtpSendTask,
+    private val phoneNumberCrypto: PhoneNumberCrypto
 ) {
     suspend fun sendOtp(phoneNumber: PhoneNumber) {
         withContext(coroutineDispatcherProvider.io) {
@@ -66,7 +68,7 @@ class PhoneNumberOtpService(
     }
 
     private fun makeNewOtpCode(phoneNumber: PhoneNumber) = PhoneNumberOtpDto(
-        phone = PhoneNumberDto(phoneNumber.number, phoneNumber.countryCode.countryCode),
+        phone = phoneNumberCrypto.encrypt(phoneNumber),
         otp = otpCodeGenerator.generateOtpCode(),
         createdAt = timeInstant.now(),
         updatedAt = timeInstant.now(),
