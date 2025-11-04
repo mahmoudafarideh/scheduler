@@ -12,6 +12,7 @@ import m.a.scheduler.auth.model.PhoneNumber
 import m.a.scheduler.auth.model.VerifyOtpResult
 import m.a.scheduler.auth.task.OtpSendTask
 import m.a.scheduler.auth.task.OtpTaskInfo
+import m.a.scheduler.fixtures.phoneNumberFixture
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.mockito.Mockito
@@ -60,14 +61,13 @@ class PhoneNumberOtpServiceTest {
     @Test
     fun `When users tries to login a new 6-len code in 5 minutes should get generated`() = coroutineScope.runTest {
         val service = createService()
-        val phoneNumber = PhoneNumber("9192493674")
-        service.sendOtp(phoneNumber)
+        service.sendOtp(phoneNumberFixture)
         argumentCaptor<PhoneNumberOtpDto>().apply {
             verify(repository).insert(capture())
             assertEquals("123456", firstValue.otp)
             assertEquals(6, firstValue.otp.length)
             assertEquals(300_000, firstValue.expiresAt.time)
-            verify(otpSendTask).schedule(OtpTaskInfo(phoneNumber, "123456"))
+            verify(otpSendTask).schedule(OtpTaskInfo(phoneNumberFixture, "123456"))
         }
     }
 
@@ -95,11 +95,10 @@ class PhoneNumberOtpServiceTest {
     @Test
     fun `When user retries to login again, previous codes should get revoked`() = coroutineScope.runTest {
         val service = createService()
-        val phoneNumber = PhoneNumber("9192493674")
         val previousCode = generateRandomOtpCode()
-        mockPreviousOtpCode(phoneNumber, previousCode)
+        mockPreviousOtpCode(phoneNumberFixture, previousCode)
         val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
-        service.sendOtp(phoneNumber)
+        service.sendOtp(phoneNumberFixture)
         argumentCaptor<PhoneNumberOtpDto>().apply {
             verify(repository).save(updatedCode)
         }
@@ -169,7 +168,7 @@ class PhoneNumberOtpServiceTest {
 
     private fun generateRandomOtpCode() = PhoneNumberOtpDto(
         id = ObjectId(),
-        phone = PhoneNumberDto("9192493674", "98"),
+        phone = PhoneNumberDto(phoneNumberFixture.number, phoneNumberFixture.countryCode.countryCode),
         otp = "654321",
         createdAt = timeInstant.now(),
         updatedAt = timeInstant.now(),
