@@ -75,11 +75,10 @@ class PhoneNumberOtpServiceTest {
     fun `Otp code should be generated randomly`() = coroutineScope.runTest {
         Mockito.`when`(timeInstant.now()) doReturn Date(0)
         val service = createService()
-        val phoneNumber = PhoneNumber("9192493674")
-        service.sendOtp(phoneNumber)
+        service.sendOtp(phoneNumberFixture)
 
         Mockito.`when`(otpCodeGenerator.generateOtpCode()) doReturn "654321"
-        service.sendOtp(phoneNumber)
+        service.sendOtp(phoneNumberFixture)
 
         val captor = argumentCaptor<PhoneNumberOtpDto>()
         verify(repository, times(2)).insert(captor.capture())
@@ -107,11 +106,10 @@ class PhoneNumberOtpServiceTest {
     @Test
     fun `When user entered otp correctly, it should be able to login and code get consumed`() = coroutineScope.runTest {
         val service = createService()
-        val phoneNumber = PhoneNumber("9192493674")
         val previousCode = generateRandomOtpCode()
-        mockPreviousOtpCode(phoneNumber, previousCode)
+        mockPreviousOtpCode(phoneNumberFixture, previousCode)
         val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Consumed)
-        val result = service.verifyOtpCode(phoneNumber, previousCode.otp)
+        val result = service.verifyOtpCode(phoneNumberFixture, previousCode.otp)
         argumentCaptor<PhoneNumberOtpDto>().apply {
             verify(repository).save(updatedCode)
         }
@@ -122,20 +120,19 @@ class PhoneNumberOtpServiceTest {
     fun `When user entered otp wrongly, it should not be able to login and code not get consumed`() =
         coroutineScope.runTest {
             val service = createService()
-            val phoneNumber = PhoneNumber("9192493674")
             val previousCode = generateRandomOtpCode()
             val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Consumed)
 
-            mockPreviousOtpCode(phoneNumber, previousCode)
-            val result = service.verifyOtpCode(phoneNumber, "000000")
+            mockPreviousOtpCode(phoneNumberFixture, previousCode)
+            val result = service.verifyOtpCode(phoneNumberFixture, "000000")
             assertEquals(VerifyOtpResult.Error.InvalidOtp, result)
 
-            mockPreviousOtpCode(phoneNumber, previousCode.copy(expiresAt = Date(-10)))
-            val result2 = service.verifyOtpCode(phoneNumber, previousCode.otp)
+            mockPreviousOtpCode(phoneNumberFixture, previousCode.copy(expiresAt = Date(-10)))
+            val result2 = service.verifyOtpCode(phoneNumberFixture, previousCode.otp)
             assertEquals(VerifyOtpResult.Error.ExpiredOtp, result2)
 
-            mockPreviousOtpCode(phoneNumber, null)
-            val result3 = service.verifyOtpCode(phoneNumber, "000000")
+            mockPreviousOtpCode(phoneNumberFixture, null)
+            val result3 = service.verifyOtpCode(phoneNumberFixture, "000000")
             assertEquals(VerifyOtpResult.Error.NotFound, result3)
 
             argumentCaptor<PhoneNumberOtpDto>().apply {
@@ -147,11 +144,10 @@ class PhoneNumberOtpServiceTest {
     fun `When user retries to login again and previous code is not pending, previous codes should not get revoked`() =
         coroutineScope.runTest {
             val service = createService()
-            val phoneNumber = PhoneNumber("9192493674")
             val previousCode = generateRandomOtpCode().copy(status = PhoneNumberOtpDto.Status.Consumed)
-            mockPreviousOtpCode(phoneNumber, previousCode)
+            mockPreviousOtpCode(phoneNumberFixture, previousCode)
             val updatedCode = previousCode.copy(status = PhoneNumberOtpDto.Status.Revoked)
-            service.sendOtp(phoneNumber)
+            service.sendOtp(phoneNumberFixture)
             argumentCaptor<PhoneNumberOtpDto>().apply {
                 verify(repository, times(0)).save(updatedCode)
             }
