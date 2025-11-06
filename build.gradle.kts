@@ -30,6 +30,7 @@ dependencies {
     implementation(libs.jackson.module.kotlin)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
+    implementation("com.github.kuliginstepan:mongration:2.0.1")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
@@ -41,6 +42,7 @@ dependencies {
     testImplementation(libs.mockito.kotlin)
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
 }
 
 kotlin {

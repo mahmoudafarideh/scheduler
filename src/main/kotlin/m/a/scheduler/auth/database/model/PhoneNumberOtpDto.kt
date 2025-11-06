@@ -18,7 +18,8 @@ import java.util.*
     ]
 )
 data class PhoneNumberOtpDto(
-    @Id val id: ObjectId = ObjectId.get(),
+    @Id
+    val id: ObjectId = ObjectId.get(),
     val phone: EncryptedPhoneNumberDto,
     val otp: String,
     val createdAt: Date,
